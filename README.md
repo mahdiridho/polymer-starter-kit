@@ -29,9 +29,10 @@ Install [Polymer CLI](https://github.com/Polymer/polymer-cli) using
 
 ##### Initialize project from template
 
-    mkdir my-app
-    cd my-app
-    polymer init polymer-3-starter-kit
+To initialize new project, just clone the repo on lit-element branch :
+
+    git clone git@github.com:mahdiridho/polymer-starter-kit.git
+    git checkout lit-element
 
 ### Start the development server
 
