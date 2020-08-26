@@ -8,165 +8,255 @@
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
-import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
-import { setPassiveTouchGestures, setRootPath } from '@polymer/polymer/lib/utils/settings.js';
-import '@polymer/app-layout/app-drawer/app-drawer.js';
-import '@polymer/app-layout/app-drawer-layout/app-drawer-layout.js';
-import '@polymer/app-layout/app-header/app-header.js';
-import '@polymer/app-layout/app-header-layout/app-header-layout.js';
-import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
-import '@polymer/app-layout/app-toolbar/app-toolbar.js';
-import '@polymer/app-route/app-location.js';
-import '@polymer/app-route/app-route.js';
-import '@polymer/iron-pages/iron-pages.js';
-import '@polymer/iron-selector/iron-selector.js';
-import '@polymer/paper-icon-button/paper-icon-button.js';
-import './my-icons.js';
+import { html, LitElement } from 'lit-element';
+import { router, navigator, outlet } from 'lit-element-router';
+import { setPassiveTouchGestures, setRootPath } from '../utils/settings.js';
+import { installMediaQueryWatcher } from "../utils/media-query";
+import { Layouts } from '@collaborne/lit-flexbox-literals';
 
-// Gesture events like tap and track generated from touch will not be
-// preventable, allowing for better scrolling performance.
-setPassiveTouchGestures(true);
+// These are the elements needed by this element.
+import '@material/mwc-drawer';
+import '@material/mwc-top-app-bar';
+import '@material/mwc-icon-button';
+import '@material/mwc-icon';
+import '@material/mwc-list/mwc-list';
+import '@material/mwc-list/mwc-list-item';
+import '@material/mwc-snackbar';
 
-// Set Polymer's root path to the same value we passed to our service worker
-// in `index.html`.
-setRootPath(MyAppGlobals.rootPath);
+class MyApp extends router(navigator(outlet(LitElement))) {
+  static get styles() {
+    return [
+      Layouts
+    ];
+  }
 
-class MyApp extends PolymerElement {
-  static get template() {
+  render() {
+    // Anything that's related to rendering should be done in here.
     return html`
       <style>
         :host {
           --app-primary-color: #4285f4;
           --app-secondary-color: black;
-
           display: block;
         }
 
-        app-drawer-layout:not([narrow]) [drawer-toggle] {
+        mwc-drawer {
+          height: 100vh;
+        }
+
+        mwc-icon-button.menu[hidden] {
           display: none;
         }
 
-        app-header {
-          color: #fff;
-          background-color: var(--app-primary-color);
+        .main-content {
+          padding-left: 20px;
         }
 
-        app-header paper-icon-button {
-          --paper-icon-button-ink-color: white;
+        .sublist {
+          padding-left: 20px;
         }
 
-        .drawer-list {
-          margin: 0 20px;
+        .sublist[hidden] {
+          display: none;
         }
-
-        .drawer-list a {
-          display: block;
-          padding: 0 16px;
-          text-decoration: none;
-          color: var(--app-secondary-color);
-          line-height: 40px;
-        }
-
-        .drawer-list a.iron-selected {
-          color: black;
-          font-weight: bold;
+        mwc-top-app-bar {
+          --mdc-top-app-bar-width: ${this.desktop?'calc(100% - 256px)':'100%'};
         }
       </style>
-
-      <app-location route="{{route}}" url-space-regex="^[[rootPath]]">
-      </app-location>
-
-      <app-route route="{{route}}" pattern="[[rootPath]]:page" data="{{routeData}}" tail="{{subroute}}">
-      </app-route>
-
-      <app-drawer-layout fullbleed="" narrow="{{narrow}}">
-        <!-- Drawer content -->
-        <app-drawer id="drawer" slot="drawer" swipe-open="[[narrow]]">
-          <app-toolbar>Menu</app-toolbar>
-          <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-            <a name="view1" href="[[rootPath]]view1">View One</a>
-            <a name="view2" href="[[rootPath]]view2">View Two</a>
-            <a name="view3" href="[[rootPath]]view3">View Three</a>
-          </iron-selector>
-        </app-drawer>
-
-        <!-- Main content -->
-        <app-header-layout has-scrolling-region="">
-
-          <app-header slot="header" condenses="" reveals="" effects="waterfall">
-            <app-toolbar>
-              <paper-icon-button icon="my-icons:menu" drawer-toggle=""></paper-icon-button>
-              <div main-title="">My App</div>
-            </app-toolbar>
-          </app-header>
-
-          <iron-pages selected="[[page]]" attr-for-selected="name" role="main">
-            <my-view1 name="view1"></my-view1>
-            <my-view2 name="view2"></my-view2>
-            <my-view3 name="view3"></my-view3>
-            <my-view404 name="view404"></my-view404>
-          </iron-pages>
-        </app-header-layout>
-      </app-drawer-layout>
+      <!-- Header -->
+      <mwc-drawer hasHeader .type="${this.desktop ? '' : 'modal'}" ?open=${this.drawerState} @MDCDrawer:closed="${() => this.drawerState = !this.drawerState}">
+        <span slot="title">Menu</span>
+        <span slot="subtitle">subtitle</span>
+        <div>
+          <mwc-list>
+            <mwc-list-item graphic="avatar" @click="${() => this.linkClick('/home')}">
+              <span>Home</span>
+              <mwc-icon slot="graphic">home</mwc-icon>
+            </mwc-list-item>
+            <mwc-list-item graphic="avatar" @click="${this.material}">
+              <span>
+                Material
+              </span>
+              <mwc-icon slot="graphic">category</mwc-icon>
+            </mwc-list-item>
+            <mwc-list class="sublist" ?hidden="${!this.collapse}">
+              <mwc-list-item graphic="avatar" @click="${() => this.linkClick('/material/button')}">
+                <span>mwc-button</span>
+                <mwc-icon slot="graphic">code</mwc-icon>
+              </mwc-list-item>
+              <mwc-list-item graphic="avatar" @click="${() => this.linkClick('/material/checkbox')}">
+                <span>mwc-checkbox</span>
+                <mwc-icon slot="graphic">code</mwc-icon>
+              </mwc-list-item>
+            </mwc-list>
+          </mwc-list>
+        </div>
+        <div slot="appContent">
+          <mwc-top-app-bar>
+            <mwc-icon-button slot="navigationIcon" class="menu" icon="menu" ?hidden="${this.desktop}" @click="${() => this.drawerState = !this.drawerState}"></mwc-icon-button>
+            <div slot="title">${this.headTitle}</div>
+            <mwc-icon-button slot="actionItems" icon="account_circle" title="Profile"></mwc-icon-button>
+          </mwc-top-app-bar>
+          <div class="main-content">
+            <my-home route='home'></my-home>
+            <my-material route='material' .subroute="${this.params.name}"></my-material>
+            <my-view404 route='view404'></my-view404>
+          </div>
+          <mwc-snackbar labelText="You are now ${this._offline ? 'offline' : 'online'}."></mwc-snackbar>
+        </div>
+      </mwc-drawer>
     `;
   }
 
   static get properties() {
     return {
-      page: {
-        type: String,
-        reflectToAttribute: true,
-        observer: '_pageChanged'
-      },
-      routeData: Object,
-      subroute: Object
+      page: { type: String },
+      params: { type: Object },
+      query: { type: Object },
+      data: { type: Object },
+      appTitle: { type: String },
+      headTitle: { type: String },
+      _drawerOpened: { type: Boolean },
+      _offline: { type: Boolean },
+      desktop: { type: Boolean },
+      drawerState: { type: Boolean },
+      collapse: { type: Boolean }
     };
   }
 
-  static get observers() {
-    return [
-      '_routePageChanged(routeData.page)'
-    ];
+  static get routes() {
+    return [{
+      name: 'home',
+      pattern: '',
+      data: { title: 'Home' }
+    }, {
+      name: 'home',
+      pattern: 'home',
+      data: { title: 'Home' }
+    }, {
+      name: 'profile',
+      pattern: 'profile',
+      data: { title: 'Profile' }
+    }, {
+      name: 'material',
+      pattern: 'material'
+    }, {
+      name: 'material',
+      pattern: 'material/:name'
+    }, {
+      name: 'view404',
+      pattern: '*'
+    }];
   }
 
-  _routePageChanged(page) {
-     // Show the corresponding page according to the route.
-     //
-     // If no page was found in the route data, page will be an empty string.
-     // Show 'view1' in that case. And if the page doesn't exist, show 'view404'.
-    if (!page) {
-      this.page = 'view1';
-    } else if (['view1', 'view2', 'view3'].indexOf(page) !== -1) {
-      this.page = page;
+  constructor() {
+    super();
+    // To force all event listeners for gestures to be passive.
+    // See https://www.polymer-project.org/3.0/docs/devguide/settings#setting-passive-touch-gestures
+    setPassiveTouchGestures(true);
+    setRootPath(MyAppGlobals.rootPath);
+    this.page = "";
+    this.params = {};
+    this.query = {};
+    this.data = {};
+    this.drawerState = false;
+  }
+
+  firstUpdated() {
+    window.addEventListener('online', () => this._offline = false);
+    window.addEventListener('offline', () => this._offline = true);
+    installMediaQueryWatcher(`(min-width: 460px)`, desktop => this.desktop = desktop);
+    fetch("./src/config.json").then((response)=>{ // load the file data
+      return response.json()
+    }).then((json)=>{
+      console.log(json)
+      window.MyAppGlobals = {
+        ...window.MyAppGlobals,
+        ...json
+      };
+      this.appTitle = MyAppGlobals.appTitle;
+    }).catch((e)=>{
+      console.log("ERROR : ",e)
+      return reject(e)
+    })
+  }
+
+  updated(updates) {
+    if (updates.has('_offline'))
+      this.shadowRoot.querySelector("mwc-snackbar").show();
+    if (updates.has('page') || updates.has('params'))
+      this._pageChanged();
+  }
+
+  router(route, params, query, data) {
+    this.activeRoute = route;
+    this.params = params;
+    this.query = query;
+    this.data = data;
+    this._routeChanged();
+    console.log(route, params, query, data)
+  }
+
+  material() {
+    this.linkClick('/material');
+    this.collapse = !this.collapse;
+  }
+
+  linkClick(path) {
+    this.navigate(path);
+  }
+
+  _routeChanged() {
+    // Show the corresponding page according to the route.
+    //
+    // If no page was found in the route data, page will be an empty string.
+    // Show 'home' in that case. And if the page doesn't exist, show 'view404'.
+    if (this.activeRoute == "") {
+      this.page = "home";
+    } else if (['home', 'material','view404'].indexOf(this.activeRoute) !== -1) {
+      this.page = this.activeRoute;
     } else {
-      this.page = 'view404';
-    }
-
-    // Close a non-persistent drawer when the page & route are changed.
-    if (!this.$.drawer.persistent) {
-      this.$.drawer.close();
+      this.navigate("/view404");
     }
   }
 
-  _pageChanged(page) {
+  _pageChanged() {
+    this.requestUpdate(); // call it to wait the page prop complete updated
     // Import the page component on demand.
     //
     // Note: `polymer build` doesn't like string concatenation in the import
     // statement, so break it up.
-    switch (page) {
-      case 'view1':
-        import('./my-view1.js');
+    switch (this.page) {
+      case 'home':
+        this.headTitle = "Home";
+        import('./my-home');
         break;
-      case 'view2':
-        import('./my-view2.js');
-        break;
-      case 'view3':
-        import('./my-view3.js');
+      case 'material':
+        this.headTitle = "Material";
+        import('./my-material');
+        if (['button', 'checkbox'].indexOf(this.params.name) !== -1)
+          this.headTitle += " - " + this.params.name;
         break;
       case 'view404':
-        import('./my-view404.js');
+        this.headTitle = "404";
+        import('./my-view404');
         break;
     }
+
+    document.title = this.appTitle + ' - ' + this.page;
+    // Set open graph metadata
+    this._setMeta('name', 'application-name', document.title);
+    this._setMeta('name', 'apple-mobile-web-app-title', document.title);
+  }
+
+  _setMeta(attrName, attrValue, content) {
+    let element = document.head.querySelector(`meta[${attrName}="${attrValue}"]`);
+    if (!element) {
+      element = document.createElement('meta');
+      element.setAttribute(attrName, attrValue);
+      document.head.appendChild(element);
+    }
+    element.setAttribute('content', content || '');
   }
 }
 
